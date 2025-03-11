@@ -13,12 +13,14 @@ test <- as.tibble(res_data) |>
 # Plot the residuals with a horizontal line at zero
 res_plot <- ggplot2::ggplot(test) +
   ggplot2::geom_point(aes(x = sample, y = residuals)) +
-  ggplot2::geom_hline(aes(yintercept = 0), col='red', linetype = 'dotted') +
+  ggplot2::geom_hline(aes(yintercept = 0), col='red', linetype = 'dashed') +
+  ggthemes::theme_clean(base_size = 16) +
   ggplot2::theme(
     axis.text.x=ggplot2::element_blank(),
     axis.ticks.x = ggplot2::element_blank(),
     )
   
+res_plot
  # return(res_plot)
 
 #}
