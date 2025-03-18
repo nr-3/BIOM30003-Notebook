@@ -1,6 +1,6 @@
 # PCA plot
 
-pca_biplot <- function(se, predictor) {
+pca_biplot <- function(se, predictor, plot = T) {
 
   asy<-SummarizedExperiment::assay(se)
   PC <- prcomp(t(as.matrix(asy)), scale. = T)
@@ -21,6 +21,10 @@ pca_biplot <- function(se, predictor) {
   
   dat$pred <- col
   
+  if(!plot) {
+    return(dat)
+  }
+  
   # Create a PCA plot
   plot <- ggplot(
     data = dat, 
@@ -28,8 +32,12 @@ pca_biplot <- function(se, predictor) {
     ) +
     geom_point()+
     theme_bw()+
-    coord_fixed()+
+    theme_classic()+
     labs(x=xLab,y=yLab)
+  
+  if(is.numeric(col)) {
+    plot <- plot + scale_color_viridis_c(option = 'plasma')
+  }
 
   return(plot)
 }
