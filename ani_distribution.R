@@ -1,5 +1,11 @@
 # Boxplot of ANI distribution based on a specified predictor
-ani_distribution <- function(se, genome_file, predictor, plot = T) {
+# Parameters:
+# se - SummarizedExperiment
+# genome_file - String containing specified organism
+# predictor - String containing the distinguishing predictor
+# plot - boolean indicating whether a plot should be produced
+
+ani_boxplot <- function(se, genome_file, predictor, plot = T) {
   
   # Validate input
   if(!inherits(se, 'SummarizedExperiment')) {
@@ -15,7 +21,7 @@ ani_distribution <- function(se, genome_file, predictor, plot = T) {
   
   # Validate that the contig/predictor exists
   if(length(contig) == 0 | length(case) == 0) {
-    stop('Provide a valid predictor or genome file')
+    stop('Provide a valid predictor or genome file (ex. \'GCF_025147485.1\')')
   }
   
   # Access the data for the predictor
@@ -29,8 +35,7 @@ ani_distribution <- function(se, genome_file, predictor, plot = T) {
     return(plot_data)
   }
   
-  custom_colors <- c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a','#b15928',
-                     '#8dd3c7','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5')
+  custom_colors <- c('#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5')
   
   custom_colors <- custom_colors[1:length(unique(plot_data$predictor))]
   
@@ -47,4 +52,4 @@ ani_distribution <- function(se, genome_file, predictor, plot = T) {
 
 }
 
-ani_distribution(se, 'GCF_025147485.1', 'Case_status', plot=T)
+ani_boxplot(se, 'GCF_025147485.1', 'Case_status', plot=T)
