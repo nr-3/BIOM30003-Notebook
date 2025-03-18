@@ -41,7 +41,8 @@ ani_boxplot <- function(se, genome_file, predictor, plot = T) {
   
   
   plot <- ggplot2::ggplot(plot_data, aes(x=predictor,y=ani, fill = predictor)) +
-    geom_boxplot() +
+    geom_boxplot(outliers=F) +
+    ggbeeswarm::geom_quasirandom() +
     ggplot2::xlab(label = predictor) +
     ggplot2::scale_fill_manual(values = custom_colors) +
     ggplot2::scale_y_continuous(name = 'ANI', limits = c(97,100)) +
