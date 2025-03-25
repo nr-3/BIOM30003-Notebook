@@ -28,7 +28,7 @@ volcano_plot <- function(se, fit, predictor, plot = T) {
   plot_data$coef <- fit@coefficients@listData$Case_statusPD
   
   
-  plot <- plot_data |> ggplot2::ggplot(ggplot2::aes(x = coef,y = -log10padj)) +
+  plot <- plot_data |> ggplot2::ggplot(ggplot2::aes(x = fold_change,y = -log10padj)) +
     ggplot2::geom_point()
 
   return(plot)
