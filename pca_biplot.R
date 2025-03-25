@@ -41,3 +41,12 @@ pca_biplot <- function(se, predictor, plot = T) {
 
   return(plot)
 }
+
+pca_biplot(se, predictor = 'Case_status')
+
+PC <- prcomp(t(as.matrix(asy)), scale. = T)
+class(PC)
+View(head(PC$rotation))
+
+autoplot(PC,loadings=T,loadings.label=T)
+

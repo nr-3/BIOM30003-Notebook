@@ -21,7 +21,7 @@ ani_boxplot <- function(se, genome_file, predictor, plot = T) {
   
   # Validate that the contig/predictor exists
   if(length(contig) == 0 | length(case) == 0) {
-    stop('Provide a valid predictor or genome file (ex. \'GCF_025147485.1\')')
+    stop('Provide a valid predictor or contig (ex. \'GCF_025147485.1\')')
   }
   
   # Access the data for the predictor
