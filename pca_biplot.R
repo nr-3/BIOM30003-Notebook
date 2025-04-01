@@ -42,7 +42,7 @@ pca_biplot <- function(se, predictor, plot = T) {
   return(plot)
 }
 
-pca_biplot(se, predictor = 'Case_status')
+pca_biplot(se_lee, predictor = 'antibiotics_current_use')
 
 PC <- prcomp(t(as.matrix(asy)), scale. = T)
 class(PC)

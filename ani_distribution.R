@@ -1,9 +1,15 @@
-# Boxplot of ANI distribution based on a specified predictor
-# Parameters:
-# se - SummarizedExperiment
-# genome_file - String containing specified organism
-# predictor - String containing the distinguishing predictor
-# plot - boolean indicating whether a plot should be produced
+#' Generate a Boxplot for ANI Values of a Given Contig and Phenotype 
+#'  
+#' This function generates a boxplot to visualize the ANI (Average Nucleotide Identity) values  
+#' for a specific contig across different levels of a given categorical predictor.  
+#'  
+#' @param se SummarizedExperiment. A `SummarizedExperiment` object containing the assay data and metadata.  
+#' @param genome_file Character. The name of the genome file (contig) to extract from the dataset.  
+#' @param predictor Character. The phenotype to group samples in the plot.  
+#' @param plot Logical. If `TRUE` (default), the function returns a ggplot object.  
+#' If `FALSE`, it returns a data frame containing the plotted data.  
+#'  
+#' @return A ggplot object displaying a boxplot of ANI values with a beeswarm overlay across predictor categories.
 
 ani_boxplot <- function(se, genome_file, predictor, plot = T) {
   
@@ -15,11 +21,11 @@ ani_boxplot <- function(se, genome_file, predictor, plot = T) {
   # Access assay data
   asy <- SummarizedExperiment::assay(se)
   
-  # Access indices of inputted contig and predictor
+  # Access indices of inputted contig and phenotype
   contig <- which(SummarizedExperiment::rowData(se)$Genome_file == genome_file)
   case <- which(colnames(tibble::as_tibble(se@colData@listData)) == predictor)
   
-  # Validate that the contig/predictor exists
+  # Validate that the contig/phenotype exists
   if(length(contig) == 0 | length(case) == 0) {
     stop('Provide a valid predictor or contig (ex. \'GCF_025147485.1\')')
   }
@@ -39,7 +45,7 @@ ani_boxplot <- function(se, genome_file, predictor, plot = T) {
   
   custom_colors <- custom_colors[1:length(unique(plot_data$predictor))]
   
-  
+  # Create ggplot with boxplot and beeswarm overlay  
   plot <- ggplot2::ggplot(plot_data, aes(x=predictor,y=ani, fill = predictor)) +
     geom_boxplot(outliers=F) +
     ggbeeswarm::geom_quasirandom() +
