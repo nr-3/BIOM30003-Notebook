@@ -4,12 +4,16 @@
 #' highlighting the relationship between effect size (coefficients) and statistical significance (-log10 p-values).
 #'
 #' @param fit A `betaGLM` object containing model results.
-#' @param coef Integer, specifying the coefficient index of the to extract top hits for plotting. Default is 2.
+#' @param coef Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.
+#' @param alpha Float indicating signficance level
+#' @param palette A vector of user defined palette to colour plot. Default is the viridis palette.
+#' @param taxonomy A dataframe with taxonomical information. If provided, significant values are labelled with species name
 #' @param plot Logical, whether to return a ggplot object (default: TRUE). If FALSE, returns the processed data.
+#'
 #'
 #' @return A ggplot2 object if `plot = TRUE`, otherwise a dataframe containing the relevant statistics.
 
-volcano_plot <- function(fit, coef = 2, plot = T) {
+volcano_plot <- function(fit, coef = 2, alpha = 0.05, palette = c("#DAA520", "#3CB371", "#483D8B"), taxonomy = NULL, plot = T) {
   
   # Validate input
   if(!inherits(fit, 'betaGLM')) {
@@ -24,14 +28,19 @@ volcano_plot <- function(fit, coef = 2, plot = T) {
     
     # Creating a tibble that can be facetted by Model
     p <- hits |>
-      tidyr::pivot_longer(cols = c(p_value, zi_p_value), names_to = 'Model', values_to = 'P_value') |>
-      dplyr::select(Genome_file, Model, P_value) |>
+      tidyr::pivot_longer(cols = c(p_value, zi_p_value), names_to = 'Model', values_to = 'p') |>
+      dplyr::select(Genome_file, Model, p) |>
+      dplyr::mutate(Model = ifelse(stringr::str_detect(Model, 'zi'), 'ZiB', 'Beta'))
+    p_adj <- hits |>
+      tidyr::pivot_longer(cols = c(p_adjust, zi_p_adjust), names_to = 'Model', values_to = 'p_adj') |>
+      dplyr::select(Genome_file, Model, p_adj) |>
       dplyr::mutate(Model = ifelse(stringr::str_detect(Model, 'zi'), 'ZiB', 'Beta'))
     hits <- hits |>
       tidyr::pivot_longer(cols = c(coefficient,zi_coefficient), 
                           names_to = 'Model', values_to = 'Coefficient') |>
       dplyr::mutate(Model = ifelse(stringr::str_detect(Model, 'zi'), 'ZiB', 'Beta')) |>
-      dplyr::inner_join(p, by = c('Genome_file' = 'Genome_file', 'Model' = 'Model'))
+      dplyr::inner_join(p, by = c('Genome_file', 'Model')) |>
+      dplyr::inner_join(p_adj, by = c('Genome_file', 'Model'))
     
     # Return the data if requested
     if(!plot) {
@@ -40,24 +49,43 @@ volcano_plot <- function(fit, coef = 2, plot = T) {
     }
     
     # Plot facetted volcano plots
-    plot <- hits |> ggplot2::ggplot(aes(x = Coefficient, y = -log10(P_value), colour = p_adjust)) +
+    plot <- hits |> ggplot2::ggplot(aes(x = Coefficient, y = -log10(p), colour = p_adj)) +
       ggplot2::geom_point() +
       ggplot2::facet_grid(~ Model, scale = 'free_x') +
       ggthemes::theme_few() +
-      ggplot2::theme(panel.spacing = unit(1, "cm"), axis.title.x = NULL) 
+      ggplot2::scale_color_gradientn(colors = palette) + 
+      ggplot2::theme(panel.spacing = unit(1, 'cm')) +
+      ggplot2::xlab('Effect Size') +
+      ggplot2::ylab('-log10(p)')
+      
+    # If taxonomical data is provided, add labels to significant values
+    if(!is.null(taxonomy)) {
+      hits <- hits |>
+        dplyr::left_join(taxonomy, by = dplyr::join_by(Genome_file==Genome)) |>
+        dplyr::mutate(label = paste(Genus, species))
+      
+      plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p<alpha,], 
+                                              mapping = aes(label = Species),
+                                              colour = 'black',
+                                              size = 2.5,
+                                              alpha = 0.8)
+    }
   } 
   
   # Plot one-model volcano plot
   else {
     hits <- hits |>
-      dplyr::mutate(log10p = log10(p_value))
+      dplyr::mutate(log10p = log10(p_value)) |>
+      dplyr::mutate(sig = ifelse(p_adjust < alpha, T, F))
     
     if(!plot) {
       return(hits)
     }
     
-    plot <- hits |> ggplot2::ggplot(ggplot2::aes(x = coefficient, y = -log10padj)) +
-      ggplot2::geom_point()
+    plot <- hits |> ggplot2::ggplot(ggplot2::aes(x = coefficient, y = -log10p, color = p_adjust)) +
+      ggplot2::geom_point() +
+      ggthemes::theme_few() +
+      ggplot2::scale_color_gradientn(colors = palette)
   }
   
   return(plot)
@@ -65,8 +93,15 @@ volcano_plot <- function(fit, coef = 2, plot = T) {
 
 ############################################################################################
 
-volcano_plot(fit_p,plot = T)
-  
+volcano_plot(fit_p, alpha = 0.001, taxonomy = taxonomy)
+
+
+plot + ggrepel::geom_label_repel(data = plot_d[plot_d$signif,], mapping = aes(label = Genome_file))
+
+plot_d |>
+  dplyr::left_join(taxonomy, by = dplyr::join_by(Genome_file==Genome)) |>
+  dplyr::filter(p < 0.001) |>
+  dplyr::select(Genome_file, Genus, Species)
 
 
 # NOT FOR PACKAGE
