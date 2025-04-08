@@ -7,13 +7,18 @@
 #' @param coef Integer, specifying the phenotype index of the betaGLM to extract p values and effect size for plotting. Default is 2.
 #' @param alpha Float indicating signficance level
 #' @param palette A vector of user defined palette to colour plot. Default is the viridis palette.
-#' @param taxonomy A dataframe with taxonomical information. If provided, significant values are labelled with species name
+#' @param label Logical, whether to label most signifcant points of the plot with Species name.
+#' @param regex String, a regular expression which can be used to format the labels
 #' @param plot Logical, whether to return a ggplot object (default: TRUE). If FALSE, returns the processed data.
 #'
 #'
 #' @return A ggplot2 object if `plot = TRUE`, otherwise a dataframe containing the relevant statistics.
 
-volcano_plot <- function(fit, coef = 2, alpha = 0.05, palette = c("#DAA520", "#3CB371", "#483D8B"), taxonomy = NULL, plot = T) {
+volcano_plot <- function(fit, coef = 2, alpha = 0.05, 
+                         palette = c("#DAA520", "#3CB371", "#483D8B"), 
+                         label = F, 
+                         regex = '\\b[A-Z][a-z]+ [a-z]+(?: [a-z]+)?(?: [A-Z]{2,}[^\\s,]*)*', 
+                         plot = T) {
   
   # Validate input
   if(!inherits(fit, 'betaGLM')) {
@@ -57,20 +62,17 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05, palette = c("#DAA520", "#3
       ggplot2::theme(panel.spacing = unit(1, 'cm')) +
       ggplot2::xlab('Effect Size') +
       ggplot2::ylab('-log10(p)')
-      
-    # If taxonomical data is provided, add labels to significant values
-    if(!is.null(taxonomy)) {
-      hits <- hits |>
-        dplyr::left_join(taxonomy, by = dplyr::join_by(Genome_file==Genome)) |>
-        dplyr::mutate(label = paste(Genus, species))
-      
-      plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p<alpha,], 
-                                              mapping = aes(label = Species),
+    
+    if(label) {
+      plot <- plot + ggrepel::geom_text_repel(data = hits[(hits$p_adjust < alpha & hits$Model == 'Beta') |
+                                                (hits$zi_p_adjust < alpha & hits$Model == 'ZiB'),], 
+                                              mapping = aes(label = str_extract(Contig_name, regex)),
                                               colour = 'black',
                                               size = 2.5,
-                                              alpha = 0.8)
+                                              alpha = 0.8,
+                                              max.overlaps = Inf)
     }
-  } 
+  }
   
   # Plot one-model volcano plot
   else {
@@ -85,7 +87,19 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05, palette = c("#DAA520", "#3
     plot <- hits |> ggplot2::ggplot(ggplot2::aes(x = coefficient, y = -log10p, color = p_adjust)) +
       ggplot2::geom_point() +
       ggthemes::theme_few() +
-      ggplot2::scale_color_gradientn(colors = palette)
+      ggplot2::scale_color_gradientn(colors = palette) +
+      ggplot2::xlab('Effect Size') +
+      ggplot2::ylab('-log10(p)')
+  }
+  
+  # If labels are requested, then add.
+  if(label) {
+    plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p_adjust < 0.05,], 
+                                            mapping = aes(label = str_extract(Contig_name, regex)),
+                                            colour = 'black',
+                                            size = 2.5,
+                                            alpha = 0.8,
+                                            max.overlaps = Inf)
   }
   
   return(plot)
@@ -93,7 +107,7 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05, palette = c("#DAA520", "#3
 
 ############################################################################################
 
-volcano_plot(fit_p, alpha = 0.001, taxonomy = taxonomy)
+volcano_plot(fit_q, alpha = 0.20, label = T)
 
 
 plot + ggrepel::geom_label_repel(data = plot_d[plot_d$signif,], mapping = aes(label = Genome_file))
