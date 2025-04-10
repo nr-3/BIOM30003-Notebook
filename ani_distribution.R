@@ -47,8 +47,8 @@ ani_boxplot <- function(se, genome_file, predictor, plot = T) {
   
   # Create ggplot with boxplot and beeswarm overlay  
   plot <- ggplot2::ggplot(plot_data, aes(x=predictor,y=ani, fill = predictor)) +
-    geom_boxplot(outliers=F) +
-    ggbeeswarm::geom_quasirandom() +
+    ggplot2::geom_boxplot(outliers=F, width = 0.4) +
+    ggbeeswarm::geom_quasirandom(width = 0.2) +
     ggplot2::xlab(label = predictor) +
     ggplot2::scale_fill_manual(values = custom_colors) +
     ggplot2::scale_y_continuous(name = 'ANI', limits = c(97,100)) +

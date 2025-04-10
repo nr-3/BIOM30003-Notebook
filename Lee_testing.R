@@ -27,19 +27,21 @@ se_lee <- filter_by_presence(se_lee, min_nonzero = 30)
 pca_biplot(se_lee, 'antibiotics_current_use')
 
 # Read query sylph file
-se_lee_q <- read_sylph('C:/Users/nraja/BIOM30003-Notebook/Lee/lee_sylph_query_gtdb_220_id99.tsv/lee_sylph_query_gtdb_220_id99.tsv')
+se_lee_q <- read_sylph('C:/Users/nraja/BIOM30003-Notebook/Lee/lee_sylph_query_gtdb_220_id99.tsv/lee_sylph_query_gtdb_220_id99.tsv', meta_data)
 se_lee_q <- filter_by_presence(se_lee, min_nonzero = 30)
 
-design <- as.formula(" ~ antibiotics_current_use")
+design <- as.formula(" ~ treatment")
 
 # Fit using zero inflated beta
-fit <- glmZiBFit(se_lee, design)
+fit_p <- glmFit(se_lee, design)
 fit_q <- glmZiBFit(se_lee_q, design)
 
 taxonomy <- read_taxonomy(example_taxonomy_path)
 
 # Volcano plot check
-volcano_plot(se = se_lee, fit = fit, predictor = 'antibiotics_current_use')
+volcano_plot(fit_p)
+fit_q@p_values
+
 head(top_hits(fit, alpha = 1))
 
 case <- which(colnames(tibble::as_tibble(se_lee@colData@listData)) == 'antibiotics_current_use')
