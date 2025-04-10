@@ -64,8 +64,7 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05,
       ggplot2::ylab('-log10(p)')
     
     if(label) {
-      plot <- plot + ggrepel::geom_text_repel(data = hits[(hits$p_adjust < alpha & hits$Model == 'Beta') |
-                                                (hits$zi_p_adjust < alpha & hits$Model == 'ZiB'),], 
+      plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p_adj < alpha,], 
                                               mapping = aes(label = str_extract(Contig_name, regex)),
                                               colour = 'black',
                                               size = 2.5,
