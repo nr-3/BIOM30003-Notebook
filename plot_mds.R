@@ -46,6 +46,7 @@ plot_mds <- function(se,
 }
 
 plot_mds(se = se_lee, coef = match('antibiotics_current_use',colnames(as.data.frame(se_lee@colData@listData))), taxonomy = taxonomy, plot = T)
-plot_mds(se = se_lee, coef = match('antibiotics_current_use',colnames(as.data.frame(se_lee@colData@listData))), plot = T)
+plot_mds(se = se_lee, coef = match('treatment',colnames(as.data.frame(se_lee@colData@listData))), plot = T)
 plot_mds(se = se_lee, coef = match('BMI',colnames(as.data.frame(se_lee@colData@listData))), plot = T)
 
+se_l

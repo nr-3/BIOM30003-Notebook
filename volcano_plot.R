@@ -93,8 +93,8 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05,
   
   # If labels are requested, then add.
   if(label) {
-    plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p_adjust < 0.05,], 
-                                            mapping = aes(label = str_extract(Contig_name, regex)),
+    plot <- plot + ggrepel::geom_text_repel(data = hits[hits$p_adjust < alpha,], 
+                                            mapping = aes(label = stringr::str_extract(Contig_name, regex)),
                                             colour = 'black',
                                             size = 2.5,
                                             alpha = 0.8,
@@ -106,7 +106,7 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05,
 
 ############################################################################################
 
-volcano_plot(fit_q, alpha = 0.20, label = T)
+volcano_plot(fit_p, alpha = 0.20, label = T)
 
 
 plot + ggrepel::geom_label_repel(data = plot_d[plot_d$signif,], mapping = aes(label = Genome_file))
