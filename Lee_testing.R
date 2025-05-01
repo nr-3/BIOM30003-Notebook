@@ -24,7 +24,7 @@ se_lee <- read_sylph('C:/Users/nraja/BIOM30003-Notebook/Lee/lee_sylph_profile_gt
 se_lee <- filter_by_presence(se_lee, min_nonzero = 30)
 
 # PCA plot check
-pca_biplot(se_lee, 'antibiotics_current_use')
+pca_biplot(se_lee, "treatment")
 
 # Read query sylph file
 se_lee_q <- read_sylph('C:/Users/nraja/BIOM30003-Notebook/Lee/lee_sylph_query_gtdb_220_id99.tsv/lee_sylph_query_gtdb_220_id99.tsv', meta_data)
@@ -43,12 +43,3 @@ volcano_plot(fit_p)
 fit_q@p_values
 
 head(top_hits(fit, alpha = 1))
-
-case <- which(colnames(tibble::as_tibble(se_lee@colData@listData)) == 'antibiotics_current_use')
-case <- se_lee@colData@listData[[case]]
-case
-unique_case <- unique(case)
-dat <- as.data.frame(as.matrix(SummarizedExperiment::assay(se_lee)))
-dat[,case==unique_case[1]]
-dim(dat)
-is.na(case)
