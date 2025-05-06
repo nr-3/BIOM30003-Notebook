@@ -54,7 +54,7 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05,
     }
     
     # Plot facetted volcano plots
-    plot <- hits |> ggplot2::ggplot(aes(x = Coefficient, y = -log10(p), colour = p_adj)) +
+    plot <- hits |> ggplot2::ggplot(aes(x = Coefficient, y = -log10(p), colour = log(p_adj))) +
       ggplot2::geom_point() +
       ggplot2::facet_grid(~ Model, scale = 'free_x') +
       ggthemes::theme_few() +
@@ -83,7 +83,7 @@ volcano_plot <- function(fit, coef = 2, alpha = 0.05,
       return(hits)
     }
     
-    plot <- hits |> ggplot2::ggplot(ggplot2::aes(x = coefficient, y = -log10p, color = p_adjust)) +
+    plot <- hits |> ggplot2::ggplot(ggplot2::aes(x = coefficient, y = -log10p, color = log(p_adjust))) +
       ggplot2::geom_point() +
       ggthemes::theme_few() +
       ggplot2::scale_color_gradientn(colors = palette) +
