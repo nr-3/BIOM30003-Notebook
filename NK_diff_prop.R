@@ -99,12 +99,23 @@ strainspy::summary(fit_n)
 strainspy::top_hits(fit_n, alpha = 0.1)
 
 # FDR
-strainspy::filter_by_presence()
+str(fit_asin)
+
 
 # Benchmarking via simulation
+x <- as.vector(SummarizedExperiment::assay(se_HSPC_asin))
+rescaled <- strainspy::rescale_beta(x)
+strainspy::getZICoefficients(fit_asin)
+
+# Comparison via AUROC
+
 
 # Volcano plots
+hits <- strainspy::top_hits(fit_asin, alpha = 1)
+ggplot2::ggplot(hits, mapping = ggplot2::aes(x = coefficient, y = -log(p_value))) +
+  ggplot2::geom_point(data = hits[-log(p_value) < -log(0.05),], mapping = ggplot2::aes(color = 'gray')) + 
+  ggplot2::geom_abline(slope = 0, intercept = -log(0.05))
 
-# Ion know
-
-
+hits
+#
+library(barbieQ)
