@@ -17,33 +17,50 @@ barbieQ::testBarcodeSignif(barbieQ = monkeyHSPC,
 
 # Having an issue with the "designFormula" part... seems to default to a contrast when I don't want it to
 
-############################## fastANCOM #######################################
-
-# Access proportion data
-fancom_data <- as.matrix(monkeyHSPC@assays@data$proportion)
-# 2 groups: NK_CD56n_CD16p and Other
-fancom_grp <- col_data_2_groups$Celltype
-# Months as additional variable (covariate)
-fancom_conf <- col_data_2_groups$Months
-# fastANCOM formats data with samples as rows and
-# microbes (or in this case barcodes) as columns; so transpose is needed
-fancom_data <- t(fancom_data)
-fastANCOM_fit <- fastANCOM::fastANCOM(Y = fancom_data, x = fancom_grp, z = fancom_conf)$results$final
-
 ######################### General Linear Model #################################
 
-glm_dat <- as.matrix(monkeyHSPC@assays@data$proportion)
-glm_dat <- as.data.frame(t(glm_dat))
-barcodes <- colnames(glm_dat)
-glm_dat$Celltype <- monkeyHSPC$sampleMetadata$Celltype
-glm_dat$Months <- monkeyHSPC$sampleMetadata$Months
+# Linear model fit using lm for each barcode
 
-glm_dat <- glm_dat |>
-  pivot_longer(cols = all_of(barcodes), names_to = 'barcode', values_to = 'proportion')
+glm_dat <- as.matrix(simulation_se@assays@data@listData[[1]])
+grp <- simulation_se$sim
+num_barcodes <- dim(simulation_se)[1]
 
-lmerTest::lmer(proportion ~ Celltype + (1|Months), data = )
+p.val_lm <- c()
 
-############################## Wilcoxon #########################################
+for(i in c(1:num_barcodes)) {
+  b_i <- glm_dat[i,]
+  b_i <- data.frame(proportion = asin(sqrt(b_i)),
+                      sim = grp)
+  lm_sim <- lm(proportion ~ sim, data = b_i)
+  aov_sim <- anova(lm_sim)
+  p.val_lm[i] <- aov_sim$`Pr(>F)`
+}
 
-wilcoxon_dat <- glm_dat
-wilcoxon_fit <- coin::wilcox_test(proportion ~ as.factor(Celltype)|as.factor(Months), data = wilcoxon_dat)
+sim_res <- rbind(sim_res, list(j, 'LM', get_AUC(p.val_lm, true_signal), 0))
+
+############################## Wilcoxon & T-test #########################################
+
+# Used base R wilcox.test & t.test on each barcode
+
+wil_dat <- as.matrix(simulation_se@assays@data@listData[[1]])
+grp <- simulation_se$sim == 'a'
+num_barcodes <- dim(simulation_se)[1]
+
+p.val_wil <- c()
+p.val_t <- c()
+
+for(i in c(1:num_barcodes)) {
+  b_i <- wil_dat[i,]
+  b_i_grp1 <- asin(sqrt(b_i[grp]))
+  b_i_grp2 <- asin(sqrt(b_i[!grp]))
+  wil_sim <- wilcox.test(b_i_grp1,b_i_grp2,alternative = 'two.sided')
+  t_sim <- t.test(b_i_grp1,b_i_grp2,alternative = 'two.sided')
+  p.val_wil[i] <- wil_sim$p.value
+  p.val_t[i] <- t_sim$p.value
+}
+
+
+sim_res <- rbind(sim_res, list(j, 'wilcoxon', get_AUC(p.val_wil, true_signal), 0))
+sim_res <- rbind(sim_res, list(j, 't-test', get_AUC(p.val_t, true_signal), 0))
+
+
