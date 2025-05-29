@@ -99,17 +99,17 @@ nrow(temp)
 ######################## Simulation via implantation ################################
 
 # Data.frame to hold the AUROC + FDR values for each simulation
-sim_res <- data.frame()
+#sim_res_adj <- data.frame()
 
 # Sample size
 n <- n_cols
 
 # Which repetition
-j <- 1
+j <- 3
 
 # Implantation parameters
-beta_diff <- runif(1,0.5,0.9)
-zero_effect <- 0.05
+beta_diff <- 0.7
+zero_effect <- 0.03
 
 # Split samples into two random groups
 sample <- c(1:n)
@@ -142,12 +142,10 @@ sim_ordb <- strainspy::glmFit(se = simulation_se, design = as.formula('~sim'))
 p.val.zib <- sim_zib@zi_p_values$simb
 p.val.ord <- sim_ordb@p_values$simb
 
-auroc <- pROC::roc(predictor = -log10(p.val.ord + 1e-50),
-             response = true_signal, levels = c(0,1), direction = '<')
+FDR_ord <- get_FDR(p.adjust(p.val.ord,method='BH'),true_signal)
+FDR_zib <- get_FDR(p.adjust(p.val.zib,method='BH'),true_signal)
 
+sim_res_adj <- rbind(sim_res_adj, list(j, 'ordinal', get_AUC(p.val.ord, true_signal), FDR_ord[1], FDR_ord[2], FDR_ord[3], beta_diff))
+sim_res_adj <- rbind(sim_res_adj, list(j, 'zib', get_AUC(p.val.zib, true_signal), FDR_zib[1], FDR_zib[2], FDR_zib[3], beta_diff))
 
-sim_res <- rbind(sim_res, list(j, 'ordinal', get_AUC(p.val.ord, true_signal), 0))
-sim_res <- rbind(sim_res, list(j, 'zib', get_AUC(p.val.zib, true_signal), 0))
-
-ggplot(sim_res, aes(x = model, y = AUC)) +
-  geom_col()
+write.csv(sim_res_adj, file = 'C:/Users/nraja/Downloads/sim_res_adj.csv', row.names = F)
