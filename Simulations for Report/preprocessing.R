@@ -53,7 +53,7 @@ col_data$Celltype <- gsub('Gr_.','Gr',col_data$Celltype)
 col_data@rownames <- gsub('Gr_.','Gr',col_data@rownames)
 
 col_data_2_groups <- col_data
-col_data_2_groups$Celltype <- ifelse(col_data$Celltype == 'NK_CD56n_CD16p',col_data$Celltype,'Other')
+col_data_2_groups$feature <- ifelse(col_data$Celltype == 'NK_CD56n_CD16p',col_data$Celltype,'Other')
 
 n_rows <- max(barcode_proportions$row_indices)
 n_cols <- max(barcode_proportions$col_indices)
@@ -82,70 +82,53 @@ se_HSPC_2grp <- SummarizedExperiment::SummarizedExperiment(
   colData = col_data_2_groups
 )
 
-############################## Fitting Models #######################################
+############################## Real Data #######################################
 
 # Standard design across models
-m_design <- as.formula("~ Celltype + Months")
-nom_design <- as.formula("~ Celltype")
+m_design <- as.formula("~ feature + Months")
+#nom_design <- as.formula("~ Celltype")
 
 # Zero-inflated beta fit 
 zib_2grp <- strainspy::glmZiBFit(se = se_HSPC_2grp, design = design)
 
-# Ordinal beta fit
-beta_2grp <- strainspy::glmFit(se = se_HSPC_2grp, design = design)
+barcodes <- row.names(temp)
 
-nrow(temp)
-
-######################## Simulation via implantation ################################
-
-# Data.frame to hold the AUROC + FDR values for each simulation
-#sim_res_adj <- data.frame()
-
-# Sample size
-n <- n_cols
-
-# Which repetition
-j <- 3
-
-# Implantation parameters
-beta_diff <- 0.7
-zero_effect <- 0.03
-
-# Split samples into two random groups
-sample <- c(1:n)
-grp1 <- sort(sample(sample, n/2))
-grp2 <- setdiff(sample, grp1)
-simulation_se <- se_HSPC_2grp
-simulation_se$sim <- NA
-simulation_se[,grp1]$sim <- 'a'
-simulation_se[,grp2]$sim <- 'b'
-
-# 10% of the barcodes to be differentially abundant
-implant <- round(0.1*n_rows)
-implant <- sample(c(1:n_rows),implant)
-
-true_signal <- rep(0, n_rows)
-true_signal[implant] <- 1
-grp1 <- simulation_se$sim=='a'
-
-# Implant the signal in the barcodes randomly selected
-for (i in implant) {
-  s <- as.vector(simulation_se@assays@data@listData[[1]][i,])
-  s <- rescale_beta(s[grp1], beta = beta_diff, zi = zero_effect)
-  simulation_se@assays@data@listData[[1]][i,grp1] <- s$rescaled
+# Grab the minimum of the two p-values for each barcode
+p.val.zib <- c()
+beta.p <- beta_2grp@p_values$featureOther
+zero.p <- beta_2grp@zi_p_values$featureOther
+for(i in c(1:dim(se_HSPC_2grp)[[1]])) {
+  p.val.zib[i] <- min(beta.p[i],zero.p[i])
 }
 
-sim_zib <- strainspy::glmZiBFit(se = simulation_se, design = as.formula('~sim'))
-sim_ordb <- strainspy::glmFit(se = simulation_se, design = as.formula('~sim'))
+# BH correction for the p-values
+p.val.zib <- p.adjust(p.val.zib, method = 'BH')
+p.val.zib[is.na(p.val.zib)] <- 1
 
-# AUC Calculations (similar to Wirbel et al.'s SIMBA package)
-p.val.zib <- sim_zib@zi_p_values$simb
-p.val.ord <- sim_ordb@p_values$simb
+# Find significant barcodes for ZiB
+zib.sig <- barcodes[p.val.zib < 0.05]
 
-FDR_ord <- get_FDR(p.adjust(p.val.ord,method='BH'),true_signal)
-FDR_zib <- get_FDR(p.adjust(p.val.zib,method='BH'),true_signal)
+# limma
+design_limma <- model.matrix(~ se_HSPC_2grp$feature + se_HSPC_2grp$Months)
+limma_dat <- as.matrix(se_HSPC_2grp@assays@data@listData[[1]])
+limma_dat <- asin(sqrt(limma_dat))
 
-sim_res_adj <- rbind(sim_res_adj, list(j, 'ordinal', get_AUC(p.val.ord, true_signal), FDR_ord[1], FDR_ord[2], FDR_ord[3], beta_diff))
-sim_res_adj <- rbind(sim_res_adj, list(j, 'zib', get_AUC(p.val.zib, true_signal), FDR_zib[1], FDR_zib[2], FDR_zib[3], beta_diff))
+limma_fit <- limma::lmFit(limma_dat, design_limma)
+limma_fit <- limma::eBayes(limma_fit)
 
-write.csv(sim_res_adj, file = 'C:/Users/nraja/Downloads/sim_res_adj.csv', row.names = F)
+# Access p-values and apply BH correction
+p.val_limma <- limma_fit$p.value[,2]
+p.val_limma <- p.adjust(p.val_limma, method = 'BH')
+limma.sig <- barcodes[p.val_limma < 0.05]
+
+# Create venn diagram
+VennDiagram::venn.diagram(
+  x = list(limma.sig,zib.sig),
+  category.names = c("limma" , "ZiB"),
+  filename = 'venn.png',
+  output=TRUE,
+  fill = c("#7570b3", "#1b9e77"),  # Green and orange
+  alpha = 0.6,
+  cex = 1.25,
+)
+
